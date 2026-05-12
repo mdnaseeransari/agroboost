@@ -14,12 +14,12 @@ class TaskPolicy
 
     public function create(User $user): bool
     {
-        return $user->farm_id !== null && $user->role !== 'viewer';
+        return $user->farm_id !== null && $user->role !== 'buyer';
     }
 
     public function update(User $user, Task $task): bool
     {
-        return ($user->farm_id === $task->farm_id && $user->role !== 'viewer') || $user->isAdmin();
+        return ($user->farm_id === $task->farm_id && $user->role !== 'buyer') || $user->isAdmin();
     }
 
     public function delete(User $user, Task $task): bool

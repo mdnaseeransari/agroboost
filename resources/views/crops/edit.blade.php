@@ -69,6 +69,14 @@
                         class="w-full border-gray-300 rounded-xl focus:border-agro-green focus:ring-agro-green shadow-sm">
                     @error('yield_kg') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+
+                <!-- Price per kg (for selling) -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1" for="price">Price per kg (₹) - Optional</label>
+                    <input type="number" step="0.01" name="price" id="price" value="{{ old('price', $crop->price) }}" 
+                        class="w-full border-gray-300 rounded-xl focus:border-agro-green focus:ring-agro-green shadow-sm" placeholder="Set price to sell">
+                    @error('price') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
             </div>
 
             <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-gray-100">

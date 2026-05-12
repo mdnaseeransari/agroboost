@@ -40,6 +40,16 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
+        <!-- Role -->
+        <div>
+            <x-input-label for="role" :value="__('Role')" class="text-gray-700 font-semibold" />
+            <select id="role" name="role" class="block mt-1 w-full border-gray-300 focus:border-green-500 focus:ring-green-500 rounded-xl shadow-sm transition" required>
+                <option value="farmer" {{ old('role') === 'farmer' ? 'selected' : '' }}>Farmer</option>
+                <option value="buyer" {{ old('role') === 'buyer' ? 'selected' : '' }}>Buyer</option>
+            </select>
+            <x-input-error :messages="$errors->get('role')" class="mt-2" />
+        </div>
+
         <div class="pt-4">
             <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition transform hover:-translate-y-0.5">
                 {{ __('Create Account') }}

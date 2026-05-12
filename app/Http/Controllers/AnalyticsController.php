@@ -13,29 +13,37 @@ class AnalyticsController extends Controller
 {
     public function index()
     {
-        if (Auth::user()->role === 'farmer') {
+        $user = Auth::user();
+        $farmId = $user->farm_id;
+
+        if ($user->role === 'buyer') {
             return redirect()->route('dashboard')->with('error', 'Access denied to Analytics section.');
         }
-        $farmId = Auth::user()->farm_id;
+
+        // For farmers, show only their crops, etc.
+        $queryFarmId = $farmId;
+        if ($user->role === 'farmer') {
+            $queryFarmId = $farmId; // already their farm
+        }
 
         // Crop Distribution
-        $cropDistribution = Crop::where('farm_id', $farmId)
+        $cropDistribution = Crop::where('farm_id', $queryFarmId)
             ->select('name', DB::raw('count(*) as count'))
             ->groupBy('name')
             ->get();
             
         // Inventory Data
-        $inventoryData = InventoryItem::where('farm_id', $farmId)
+        $inventoryData = InventoryItem::where('farm_id', $queryFarmId)
             ->select('name', 'quantity')
             ->limit(10)
             ->get();
 
         // Tasks Status
-        $tasksCompleted = Task::where('farm_id', $farmId)->where('completed', true)->count();
-        $tasksPending = Task::where('farm_id', $farmId)->where('completed', false)->count();
+        $tasksCompleted = Task::where('farm_id', $queryFarmId)->where('completed', true)->count();
+        $tasksPending = Task::where('farm_id', $queryFarmId)->where('completed', false)->count();
 
         // Harvest Timeline (Last 6 months)
-        $harvestTimeline = \App\Models\Harvest::where('farm_id', $farmId)
+        $harvestTimeline = \App\Models\Harvest::where('farm_id', $queryFarmId)
             ->where('harvest_date', '>=', now()->subMonths(6))
             ->select(
                 DB::raw("DATE_FORMAT(harvest_date, '%Y-%m') as sort_key"),
@@ -47,5 +55,5 @@ class AnalyticsController extends Controller
             ->get();
 
         return view('analytics', compact('cropDistribution', 'inventoryData', 'tasksCompleted', 'tasksPending', 'harvestTimeline'));
-    }
+}
 }

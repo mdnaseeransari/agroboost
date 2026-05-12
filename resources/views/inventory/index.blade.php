@@ -28,7 +28,7 @@
         </div>
     </div>
     
-    @if(Auth::user()->role !== 'viewer')
+    @if(Auth::user()->role !== 'buyer')
     <a href="{{ route('inventory.create') }}" class="inline-flex justify-center items-center gap-2 bg-agro-green text-white px-5 py-2.5 rounded-xl font-semibold shadow-sm hover:shadow-md hover:bg-agro-green/90 transition">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Add Item
@@ -87,7 +87,7 @@
                         <div class="bg-{{ $statusColor }} h-full rounded-full transition-all duration-500" style="width: {{ $percentage }}%"></div>
                     </div>
 
-                    @if(Auth::user()->role !== 'viewer')
+                    @if(Auth::user()->role !== 'buyer')
                     <div class="flex items-center gap-2 pt-4 border-t border-gray-50">
                         <a href="{{ route('inventory.edit', $item) }}" class="flex-1 inline-flex justify-center items-center py-2 bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-100 transition border border-gray-100">
                             Edit
@@ -116,7 +116,7 @@
         icon='<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>'
         title="Inventory is empty"
         message="Keep track of your seeds, fertilizers, and tools. Add your first item to start receiving low-stock alerts."
-        @if(Auth::user()->role !== 'viewer')
+        @if(Auth::user()->role !== 'buyer')
         actionText="Add Item"
         actionUrl="{{ route('inventory.create') }}"
         @endif

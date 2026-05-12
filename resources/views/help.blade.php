@@ -79,7 +79,7 @@
                     <svg class="w-5 h-5 transition-transform" :class="active === 2 ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <div x-show="active === 2" x-collapse class="p-4 bg-gray-50 text-sm text-gray-600">
-                    Only Admins can invite team members. Go to Settings -> Team Management and click "Invite Member". Enter their email and assign a role (Farmer or Viewer).
+                    Only Admins can invite team members. Go to Settings -> Team Management and click "Invite Member". Enter their email and assign a role (Farmer or Buyer).
                 </div>
             </div>
         </div>

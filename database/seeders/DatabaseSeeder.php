@@ -41,11 +41,11 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::create([
-            'name' => 'Viewer Jane',
-            'email' => 'viewer@demo.com',
+            'name' => 'Buyer Jane',
+            'email' => 'buyer@demo.com',
             'password' => Hash::make('password'),
             'farm_id' => $farm->id,
-            'role' => 'viewer',
+            'role' => 'buyer',
         ]);
 
         // Crops

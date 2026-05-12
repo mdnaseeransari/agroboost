@@ -21,6 +21,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/messages', [\App\Http\Controllers\MessageController::class, 'store'])->name('messages.store');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
     
+    // Marketplace: Buyer purchases a crop
+    Route::post('/transactions', [\App\Http\Controllers\TransactionController::class, 'store'])->name('transactions.store');
+
+    // Inventory Requests: Farmer requests item from Admin
+    Route::post('/inventory-requests', [\App\Http\Controllers\InventoryRequestController::class, 'store'])->name('inventory-requests.store');
+    Route::patch('/inventory-requests/{inventoryRequest}', [\App\Http\Controllers\InventoryRequestController::class, 'update'])->name('inventory-requests.update');
+
     // Settings Routes
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('/settings/team', [SettingsController::class, 'team'])->name('settings.team');
@@ -31,10 +38,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/settings/security', [SettingsController::class, 'security'])->name('settings.security');
     Route::patch('/settings/security', [SettingsController::class, 'updateSecurity'])->name('settings.security.update');
     // Notifications Routes
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
-    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     Route::view('/help', 'help')->name('help.index');
 });

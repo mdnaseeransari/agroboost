@@ -10,11 +10,16 @@ class InventoryItem extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['farm_id', 'name', 'type', 'quantity', 'unit', 'threshold_alert'];
+    protected $fillable = ['farm_id', 'user_id', 'name', 'type', 'quantity', 'unit', 'threshold_alert'];
 
     public function farm()
     {
         return $this->belongsTo(Farm::class);
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function isLowStock()

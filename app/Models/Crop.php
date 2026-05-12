@@ -11,8 +11,8 @@ class Crop extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'farm_id', 'name', 'variety', 'planting_date', 'expected_harvest_date',
-        'actual_harvest_date', 'yield_kg', 'status'
+        'farm_id', 'user_id', 'name', 'variety', 'planting_date', 'expected_harvest_date',
+        'actual_harvest_date', 'yield_kg', 'status', 'price'
     ];
 
     protected $casts = [
@@ -24,6 +24,11 @@ class Crop extends Model
     public function farm()
     {
         return $this->belongsTo(Farm::class);
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function tasks()

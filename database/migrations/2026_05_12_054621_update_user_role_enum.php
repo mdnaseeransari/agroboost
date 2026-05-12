@@ -6,18 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('farm_id')->nullable()->constrained()->onDelete('set null');
-            $table->enum('role', ['admin', 'farmer', 'buyer'])->default('farmer');
+            $table->enum('role', ['admin', 'farmer', 'buyer'])->default('farmer')->change();
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['farm_id', 'role']);
+            $table->enum('role', ['admin', 'farmer', 'viewer'])->default('farmer')->change();
         });
     }
 };

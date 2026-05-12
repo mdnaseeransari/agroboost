@@ -4,7 +4,7 @@
 
 @section('content')
 
-@if($role === 'viewer')
+@if($role === 'buyer')
     <x-alert-banner type="info" message="You are viewing the dashboard in Read-Only mode. You cannot modify records." />
 @endif
 
@@ -35,9 +35,9 @@
 @endif
 
 <!-- Main Metric Cards (Visible based on role) -->
-<h2 class="text-xl font-bold text-gray-800 mb-4">{{ $role === 'farmer' ? 'My Work' : 'Farm Status' }}</h2>
+<h2 class="text-xl font-bold text-gray-800 mb-4">{{ $role === 'farmer' ? 'My Work' : ($role === 'buyer' ? 'Marketplace Overview' : 'Farm Status') }}</h2>
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    @if($role === 'admin' || $role === 'viewer')
+    @if($role === 'admin' || $role === 'buyer')
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col group hover:shadow-md transition">
         <div class="flex justify-between items-start mb-4">
             <div class="w-12 h-12 bg-status-success/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300">
@@ -45,8 +45,8 @@
             </div>
             <x-stat-badge type="healthy" label="Healthy" />
         </div>
-        <h3 class="text-gray-500 font-medium text-sm">Active Crops</h3>
-        <p class="text-3xl font-bold font-poppins text-gray-900 mt-1">{{ $activeCrops }}</p>
+        <h3 class="text-gray-500 font-medium text-sm">{{ $role === 'buyer' ? 'Available Crops' : 'Active Crops' }}</h3>
+        <p class="text-3xl font-bold font-poppins text-gray-900 mt-1">{{ $role === 'buyer' ? $marketCrops->count() : $activeCrops }}</p>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col group hover:shadow-md transition">
@@ -54,18 +54,20 @@
             <div class="w-12 h-12 bg-status-warning/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300">
                 <svg class="w-6 h-6 text-status-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
             </div>
-            @if($lowStockItems > 0)
+            @if($role === 'buyer')
+                <x-stat-badge type="healthy" label="Ready to Buy" />
+            @elseif($lowStockItems > 0)
                 <x-stat-badge type="warning" label="Needs Attention" />
             @else
                 <x-stat-badge type="healthy" label="All Good" />
             @endif
         </div>
-        <h3 class="text-gray-500 font-medium text-sm">Low Stock Items</h3>
-        <p class="text-3xl font-bold font-poppins {{ $lowStockItems > 0 ? 'text-status-warning' : 'text-gray-900' }} mt-1">{{ $lowStockItems }}</p>
+        <h3 class="text-gray-500 font-medium text-sm">{{ $role === 'buyer' ? 'My Orders' : 'Low Stock Items' }}</h3>
+        <p class="text-3xl font-bold font-poppins {{ $role === 'buyer' ? 'text-gray-900' : ($lowStockItems > 0 ? 'text-status-warning' : 'text-gray-900') }} mt-1">{{ $role === 'buyer' ? $myTransactions->count() : $lowStockItems }}</p>
     </div>
     @endif
 
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col group hover:shadow-md transition {{ ($role === 'admin' || $role === 'viewer') ? '' : 'sm:col-span-1 lg:col-span-2' }}">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col group hover:shadow-md transition {{ ($role === 'admin' || $role === 'buyer') ? '' : 'sm:col-span-1 lg:col-span-2' }}">
         <div class="flex justify-between items-start mb-4">
             <div class="w-12 h-12 bg-status-info/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300">
                 <svg class="w-6 h-6 text-status-info" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
@@ -75,7 +77,7 @@
         <p class="text-3xl font-bold font-poppins text-gray-900 mt-1">{{ $pendingTasks }}</p>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col group hover:shadow-md transition {{ ($role === 'admin' || $role === 'viewer') ? '' : 'sm:col-span-1 lg:col-span-2' }}">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col group hover:shadow-md transition {{ ($role === 'admin' || $role === 'buyer') ? '' : 'sm:col-span-1 lg:col-span-2' }}">
         <div class="flex justify-between items-start mb-4">
             <div class="w-12 h-12 bg-status-danger/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300">
                 <svg class="w-6 h-6 text-status-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -88,6 +90,67 @@
         <p class="text-3xl font-bold font-poppins text-status-danger mt-1">{{ $overdueTasks }}</p>
     </div>
 </div>
+
+@if($role === 'buyer')
+    <x-alert-banner type="info" message="Welcome to the Marketplace! You can browse and purchase crops directly from our farmers." />
+
+    <!-- Marketplace for Buyers -->
+    <div class="mt-8">
+        <x-card title="Available Crops" icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>'>
+            @if($marketCrops->count() > 0)
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    @foreach($marketCrops as $crop)
+                        <div class="p-6 border border-gray-100 rounded-xl bg-white shadow-sm hover:border-agro-green/30 transition">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="font-bold text-gray-900">{{ $crop->name }}</h4>
+                                    <p class="text-sm text-gray-600">by {{ $crop->owner->name }}</p>
+                                </div>
+                                <span class="text-lg font-bold text-agro-green">₹{{ number_format($crop->price, 2) }}/kg</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Available: {{ $crop->available }} kg</p>
+                            <form action="{{ route('transactions.store') }}" method="POST" class="flex gap-2">
+                                @csrf
+                                <input type="hidden" name="crop_id" value="{{ $crop->id }}">
+                                <input type="number" name="quantity" step="0.01" max="{{ $crop->available }}" required 
+                                    class="flex-1 text-sm border-gray-200 rounded-lg focus:ring-agro-green focus:border-agro-green" placeholder="Quantity (kg)">
+                                <button type="submit" class="bg-agro-green text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-agro-green/90 transition">
+                                    Buy
+                                </button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-center text-gray-500 py-8">No crops available for purchase at the moment.</p>
+            @endif
+        </x-card>
+    </div>
+
+    @if($role === 'buyer')
+    <div class="mt-8">
+        <x-card title="My Orders" icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M7 7v10a2 2 0 002 2h6a2 2 0 002-2V7M9 10h6"></path></svg>'>
+            @if($myTransactions->count() > 0)
+                <div class="space-y-4">
+                    @foreach($myTransactions as $transaction)
+                        <div class="p-4 border border-gray-100 rounded-xl bg-white shadow-sm hover:border-agro-green/30 transition">
+                            <div class="flex justify-between items-start gap-4">
+                                <div>
+                                    <h4 class="font-bold text-gray-900">{{ $transaction->crop->name }}</h4>
+                                    <p class="text-sm text-gray-500">{{ $transaction->quantity }} kg purchased</p>
+                                </div>
+                                <span class="text-sm font-semibold text-agro-green">₹{{ number_format($transaction->total_price, 2) }}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">{{ $transaction->created_at->format('M d, Y') }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-center text-gray-500 py-8">No orders have been placed yet.</p>
+            @endif
+        </x-card>
+    </div>
+    @endif
 
 <div class="grid grid-cols-1 {{ $role === 'farmer' ? 'lg:grid-cols-2' : 'lg:grid-cols-3' }} gap-8">
     
@@ -103,7 +166,7 @@
                     @foreach($recentTasks as $task)
                         <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-agro-green/30 hover:bg-agro-green/5 transition group">
                             <div class="flex items-center gap-4">
-                                @if($role !== 'viewer')
+                                @if($role !== 'buyer')
                                 <!-- Interactive Checkbox for Admin/Farmer -->
                                 <form action="{{ route('tasks.update', $task) }}" method="POST" class="inline">
                                     @csrf
@@ -114,7 +177,7 @@
                                     </button>
                                 </form>
                                 @else
-                                <!-- Disabled Checkbox for Viewer -->
+                                <!-- Disabled Checkbox for Buyer -->
                                 <div class="w-6 h-6 rounded-md border-2 border-gray-300 opacity-50 flex items-center justify-center"></div>
                                 @endif
                                 
@@ -156,7 +219,67 @@
             @endif
         </x-card>
 
-        @if($role === 'admin' || $role === 'viewer')
+        @if($role === 'farmer')
+        <!-- Farmer's Crops -->
+        <div class="mt-8">
+            <x-card title="My Crops" icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>'>
+                <x-slot name="action">
+                    <a href="{{ route('crops.index') }}" class="text-sm text-agro-green font-medium hover:underline">Manage Crops</a>
+                </x-slot>
+
+                @if($myFarmerCrops->count() > 0)
+                    <div class="space-y-4">
+                        @foreach($myFarmerCrops->take(3) as $crop)
+                            <div class="p-4 border border-gray-100 rounded-xl bg-white shadow-sm hover:border-agro-green/30 transition">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold text-gray-900">{{ $crop->name }}</h4>
+                                    <span class="text-xs font-semibold text-agro-green">{{ $crop->status }}</span>
+                                </div>
+                                @if($crop->status === 'harvested' && $crop->price > 0)
+                                    <p class="text-sm text-gray-600">Price: ₹{{ number_format($crop->price, 2) }}/kg</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-gray-500 italic text-center py-4">No crops yet.</p>
+                @endif
+            </x-card>
+        </div>
+
+        <!-- Request Items from Admin -->
+        <div class="mt-8">
+            <x-card title="Request Items from Admin" icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>'>
+                @if($adminInventory->count() > 0)
+                    <div class="space-y-4">
+                        @foreach($adminInventory->take(3) as $item)
+                            <div class="p-4 border border-gray-100 rounded-xl bg-white shadow-sm">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold text-gray-900">{{ $item->name }}</h4>
+                                    <span class="text-sm text-gray-600">{{ $item->quantity }} {{ $item->unit }}</span>
+                                </div>
+                                <form action="{{ route('inventory-requests.store') }}" method="POST" class="flex gap-2">
+                                    @csrf
+                                    <input type="hidden" name="item_id" value="{{ $item->id }}">
+                                    <input type="number" name="quantity" step="0.01" max="{{ $item->quantity }}" required 
+                                        class="flex-1 text-sm border-gray-200 rounded-lg focus:ring-agro-green focus:border-agro-green" placeholder="Quantity">
+                                    <input type="text" name="notes" placeholder="Notes (optional)" 
+                                        class="flex-1 text-sm border-gray-200 rounded-lg focus:ring-agro-green focus:border-agro-green">
+                                    <button type="submit" class="bg-agro-green text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-agro-green/90 transition">
+                                        Request
+                                    </button>
+                                </form>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-center text-gray-500 py-4">No admin inventory available.</p>
+                @endif
+            </x-card>
+        </div>
+        @endif
+
+        @if($role === 'admin')
         <!-- Low Stock Items Alert (New) -->
         <div class="mt-8">
             <x-card title="Inventory Alerts" icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>'>
@@ -192,11 +315,9 @@
         @endif
     </div>
 
-    </div>
-
     <!-- Right Sidebar / Secondary Grid Item -->
     <div class="{{ $role === 'farmer' ? '' : 'lg:col-span-1' }}">
-        @if($role === 'admin' || $role === 'viewer')
+        @if($role === 'admin')
         <x-card title="Priority Crops" icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>'>
             <x-slot name="action">
                 <a href="{{ route('crops.index') }}" class="text-sm text-agro-green font-medium hover:underline">See All</a>
@@ -296,5 +417,6 @@
         </div>
     </div>
 </div>
+
 
 @endsection

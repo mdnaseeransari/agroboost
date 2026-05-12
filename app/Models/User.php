@@ -40,8 +40,18 @@ class User extends Authenticatable
         return $this->role === 'farmer';
     }
 
-    public function isViewer()
+    public function isBuyer()
     {
-        return $this->role === 'viewer';
+        return $this->role === 'buyer';
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'buyer_id');
+    }
+
+    public function inventoryRequests()
+    {
+        return $this->hasMany(InventoryRequest::class, 'farmer_id');
     }
 }
