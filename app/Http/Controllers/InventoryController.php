@@ -13,14 +13,36 @@ class InventoryController extends Controller
 
     public function index()
     {
-        if (Auth::user()->role === 'farmer') {
+        if (Auth::user()->role === 'buyer') {
             return redirect()->route('dashboard')->with('error', 'Access denied to Inventory section.');
         }
-        $inventoryItems = InventoryItem::where('farm_id', Auth::user()->farm_id)
-            ->orderBy('name')
-            ->paginate(12);
+
+        $user = Auth::user();
+
+        if ($user->role === 'farmer') {
+            // Farmers see their own personal inventory
+            $inventoryItems = InventoryItem::where('farm_id', $user->farm_id)
+                ->where('user_id', $user->id)
+                ->orderBy('name')
+                ->paginate(12);
+        } else {
+            // Admin sees central (unowned) inventory
+            $inventoryItems = InventoryItem::where('farm_id', $user->farm_id)
+                ->whereNull('user_id')
+                ->orderBy('name')
+                ->paginate(12);
+        }
+
+        // Admin inventory for farmer "Request from Admin" section
+        $adminInventory = collect();
+        if ($user->role === 'farmer') {
+            $adminInventory = InventoryItem::where('farm_id', $user->farm_id)
+                ->whereNull('user_id')
+                ->orderBy('name')
+                ->get();
+        }
             
-        return view('inventory.index', compact('inventoryItems'));
+        return view('inventory.index', compact('inventoryItems', 'adminInventory'));
     }
 
     public function create()
@@ -42,6 +64,11 @@ class InventoryController extends Controller
         ]);
 
         $validated['farm_id'] = Auth::user()->farm_id;
+
+        // Farmer-owned items are tagged with their user_id; admin items are null
+        if (Auth::user()->role === 'farmer') {
+            $validated['user_id'] = Auth::user()->id;
+        }
 
         InventoryItem::create($validated);
 

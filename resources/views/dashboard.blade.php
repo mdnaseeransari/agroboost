@@ -4,9 +4,7 @@
 
 @section('content')
 
-@if($role === 'buyer')
-    <x-alert-banner type="info" message="You are viewing the dashboard in Read-Only mode. You cannot modify records." />
-@endif
+
 
 <!-- Admin Section (Team & System Metrics) -->
 @if($role === 'admin')
@@ -277,6 +275,43 @@
                 @endif
             </x-card>
         </div>
+
+        <!-- Farmer: Add New Crop -->
+        <div class="mt-8">
+            <a href="{{ route('crops.create') }}" class="block w-full py-3 bg-agro-green/5 text-agro-green font-bold rounded-xl text-center hover:bg-agro-green/10 border-2 border-agro-green/20 border-dashed transition text-sm">
+                + Add New Crop
+            </a>
+        </div>
+
+        <!-- Farmer: Crop Yield Chart -->
+        @if(count($cropYieldData['labels'] ?? []) > 0)
+        <div class="mt-8">
+            <x-card title="My Crop Performance" icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>'>
+                <canvas id="cropYieldChart" height="200"></canvas>
+            </x-card>
+        </div>
+        @endif
+
+        <!-- Farmer: My Recent Requests -->
+        @if($myRequests->count() > 0)
+        <div class="mt-8">
+            <x-card title="My Request History" icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'>
+                <div class="space-y-3">
+                    @foreach($myRequests as $req)
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                            <div>
+                                <p class="text-sm font-bold text-gray-900">{{ $req->item->name ?? 'Deleted Item' }}</p>
+                                <p class="text-xs text-gray-500">{{ $req->quantity }} units · {{ $req->created_at->diffForHumans() }}</p>
+                            </div>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $req->status === 'approved' ? 'bg-status-success/10 text-status-success' : ($req->status === 'rejected' ? 'bg-status-danger/10 text-status-danger' : 'bg-status-warning/10 text-status-warning') }}">
+                                {{ ucfirst($req->status) }}
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            </x-card>
+        </div>
+        @endif
         @endif
 
         @if($role === 'admin')
@@ -312,6 +347,43 @@
                 @endif
             </x-card>
         </div>
+        <!-- Admin: Incoming Inventory Requests -->
+        @if($role === 'admin' && $inventoryRequests->count() > 0)
+        <div class="mt-8">
+            <x-card title="Inventory Requests" icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>'>
+                <div class="space-y-4">
+                    @foreach($inventoryRequests as $req)
+                        <div class="p-4 border border-gray-100 rounded-xl bg-white shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="font-bold text-gray-900">{{ $req->item->name }}</h4>
+                                    <p class="text-xs text-gray-500">Requested by <span class="font-semibold text-agro-green">{{ $req->farmer->name }}</span></p>
+                                </div>
+                                <span class="text-sm font-bold text-gray-700">{{ $req->quantity }} {{ $req->item->unit }}</span>
+                            </div>
+                            @if($req->notes)
+                                <p class="text-xs text-gray-500 italic mb-3">"{{ $req->notes }}"</p>
+                            @endif
+                            <div class="flex gap-2">
+                                <form action="{{ route('inventory-requests.update', $req) }}" method="POST" class="flex-1">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="status" value="approved">
+                                    <button type="submit" class="w-full py-2 bg-status-success/10 text-status-success font-semibold rounded-lg text-sm hover:bg-status-success/20 transition">Approve</button>
+                                </form>
+                                <form action="{{ route('inventory-requests.update', $req) }}" method="POST" class="flex-1">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="status" value="rejected">
+                                    <button type="submit" class="w-full py-2 bg-status-danger/10 text-status-danger font-semibold rounded-lg text-sm hover:bg-status-danger/20 transition">Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </x-card>
+        </div>
+        @endif
         @endif
     </div>
 
@@ -338,10 +410,6 @@
                     <p class="text-sm text-gray-500 italic text-center py-4">No active crops.</p>
                 @endforelse
             </div>
-            
-            <a href="{{ route('crops.create') }}" class="mt-4 block w-full py-2.5 bg-gray-50 text-gray-700 font-semibold rounded-xl text-center hover:bg-gray-100 border border-gray-200 border-dashed transition">
-                + Add New Crop
-            </a>
         </x-card>
 
         @if($role === 'admin')
@@ -418,5 +486,39 @@
     </div>
 </div>
 
+@if($role === 'farmer' && count($cropYieldData['labels'] ?? []) > 0)
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('cropYieldChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: @json($cropYieldData['labels']),
+                datasets: [{
+                    label: 'Yield (kg)',
+                    data: @json($cropYieldData['data']),
+                    backgroundColor: 'rgba(34, 139, 34, 0.2)',
+                    borderColor: 'rgba(34, 139, 34, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Yield (kg)' } },
+                    x: { title: { display: true, text: 'Crop' } }
+                }
+            }
+        });
+    }
+});
+</script>
+@endpush
+@endif
 
 @endsection

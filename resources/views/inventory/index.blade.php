@@ -122,4 +122,33 @@
         @endif
     />
 @endif
+
+@if(Auth::user()->role === 'farmer' && isset($adminInventory) && $adminInventory->count() > 0)
+    <div class="mt-12 pt-12 border-t border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">Request from Admin</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach($adminInventory as $item)
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col hover:border-agro-green/30 transition">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-bold text-gray-900">{{ $item->name }}</h4>
+                        <span class="text-sm font-semibold text-gray-500">{{ $item->quantity }} {{ $item->unit }} available</span>
+                    </div>
+                    <form action="{{ route('inventory-requests.store') }}" method="POST" class="space-y-3">
+                        @csrf
+                        <input type="hidden" name="item_id" value="{{ $item->id }}">
+                        <div class="flex gap-2">
+                            <input type="number" name="quantity" step="0.01" max="{{ $item->quantity }}" required 
+                                class="flex-1 text-sm border-gray-200 rounded-lg focus:ring-agro-green focus:border-agro-green" placeholder="Qty">
+                            <button type="submit" class="bg-agro-green text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-agro-green/90 transition">
+                                Request
+                            </button>
+                        </div>
+                        <input type="text" name="notes" placeholder="Optional notes..." 
+                            class="w-full text-xs border-gray-200 rounded-lg focus:ring-agro-green focus:border-agro-green">
+                    </form>
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
 @endsection
