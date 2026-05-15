@@ -13,29 +13,21 @@ class MessageController extends Controller
     {
         $validated = $request->validate([
             'content' => 'required|string|max:1000',
-            'receiver_id' => 'nullable|exists:users,id',
+            'receiver_id' => 'required|exists:users,id',
         ]);
 
         $sender = Auth::user();
-        $receiverId = $request->receiver_id;
-
-        // If farmer is sending, the receiver must be the admin
-        if ($sender->role === 'farmer') {
-            $admin = User::where('farm_id', $sender->farm_id)->where('role', 'admin')->first();
-            if (!$admin) {
-                return back()->with('error', 'No admin found to message.');
-            }
-            $receiverId = $admin->id;
-        }
-
-        if (!$receiverId) {
-            return back()->with('error', 'Please select a recipient.');
-        }
+        
+        // Ensure users are in the same farm system (except for buyers)
+        $receiver = User::findOrFail($validated['receiver_id']);
+        
+        // Basic check: Admin/Farmer can message each other. Buyer can message Farmer/Admin.
+        // For simplicity in this marketplace transformation, we'll allow cross-messaging.
 
         Message::create([
-            'farm_id' => $sender->farm_id,
+            'farm_id' => $sender->farm_id ?? $receiver->farm_id, // Use farmer's farm if sender is buyer
             'sender_id' => $sender->id,
-            'receiver_id' => $receiverId,
+            'receiver_id' => $receiver->id,
             'content' => $validated['content'],
         ]);
 

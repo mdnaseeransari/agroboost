@@ -21,12 +21,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/messages', [\App\Http\Controllers\MessageController::class, 'store'])->name('messages.store');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
     
-    // Marketplace: Buyer purchases a crop
-    Route::post('/transactions', [\App\Http\Controllers\TransactionController::class, 'store'])->name('transactions.store');
+    // Marketplace
+    Route::get('/marketplace', [\App\Http\Controllers\MarketplaceController::class, 'index'])->name('marketplace.index');
+    Route::post('/marketplace/list', [\App\Http\Controllers\MarketplaceController::class, 'storeListing'])->name('marketplace.listings.store');
+    Route::patch('/marketplace/listings/{listing}', [\App\Http\Controllers\MarketplaceController::class, 'updateListing'])->name('marketplace.listings.update');
 
-    // Inventory Requests: Farmer requests item from Admin
-    Route::post('/inventory-requests', [\App\Http\Controllers\InventoryRequestController::class, 'store'])->name('inventory-requests.store');
-    Route::patch('/inventory-requests/{inventoryRequest}', [\App\Http\Controllers\InventoryRequestController::class, 'update'])->name('inventory-requests.update');
+    // Orders
+    Route::get('/orders', [\App\Http\Controllers\OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [\App\Http\Controllers\OrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders', [\App\Http\Controllers\OrderController::class, 'store'])->name('orders.store');
+    Route::post('/orders/{order}/pay', [\App\Http\Controllers\OrderController::class, 'pay'])->name('orders.pay');
+    Route::patch('/orders/{order}/status', [\App\Http\Controllers\OrderController::class, 'updateStatus'])->name('orders.status.update');
+
+    // Farmer Requests
+    Route::get('/requests', [\App\Http\Controllers\FarmerRequestController::class, 'index'])->name('requests.index');
+    Route::get('/requests/create', [\App\Http\Controllers\FarmerRequestController::class, 'create'])->name('requests.create');
+    Route::post('/requests', [\App\Http\Controllers\FarmerRequestController::class, 'store'])->name('requests.store');
+    Route::patch('/requests/{farmerRequest}/respond', [\App\Http\Controllers\FarmerRequestController::class, 'respond'])->name('requests.respond');
 
     // Settings Routes
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');

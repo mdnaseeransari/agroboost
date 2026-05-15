@@ -133,9 +133,10 @@
                         <h4 class="font-bold text-gray-900">{{ $item->name }}</h4>
                         <span class="text-sm font-semibold text-gray-500">{{ $item->quantity }} {{ $item->unit }} available</span>
                     </div>
-                    <form action="{{ route('inventory-requests.store') }}" method="POST" class="space-y-3">
+                    <form action="{{ route('requests.store') }}" method="POST" class="space-y-3">
                         @csrf
-                        <input type="hidden" name="item_id" value="{{ $item->id }}">
+                        <input type="hidden" name="item_name" value="{{ $item->name }}">
+                        <input type="hidden" name="request_type" value="{{ $item->type === 'seed' ? 'seeds' : ($item->type === 'equipment' ? 'equipment' : 'tools') }}">
                         <div class="flex gap-2">
                             <input type="number" name="quantity" step="0.01" max="{{ $item->quantity }}" required 
                                 class="flex-1 text-sm border-gray-200 rounded-lg focus:ring-agro-green focus:border-agro-green" placeholder="Qty">
@@ -143,7 +144,7 @@
                                 Request
                             </button>
                         </div>
-                        <input type="text" name="notes" placeholder="Optional notes..." 
+                        <input type="text" name="description" placeholder="Optional notes..." 
                             class="w-full text-xs border-gray-200 rounded-lg focus:ring-agro-green focus:border-agro-green">
                     </form>
                 </div>

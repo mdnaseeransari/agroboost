@@ -45,13 +45,23 @@ class User extends Authenticatable
         return $this->role === 'buyer';
     }
 
-    public function transactions()
+    public function orders()
     {
-        return $this->hasMany(Transaction::class, 'buyer_id');
+        return $this->hasMany(Order::class, 'buyer_id');
     }
 
-    public function inventoryRequests()
+    public function sales()
     {
-        return $this->hasMany(InventoryRequest::class, 'farmer_id');
+        return $this->hasMany(Order::class, 'farmer_id');
+    }
+
+    public function farmerRequests()
+    {
+        return $this->hasMany(FarmerRequest::class, 'farmer_id');
+    }
+
+    public function cropListings()
+    {
+        return $this->hasMany(CropListing::class, 'farmer_id');
     }
 }

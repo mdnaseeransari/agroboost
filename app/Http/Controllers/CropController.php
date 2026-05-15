@@ -12,6 +12,12 @@ class CropController extends Controller
     {
         $user = Auth::user();
         
+        // Auto-update crops that reached their harvest date
+        Crop::where('farm_id', $user->farm_id)
+            ->where('status', 'growing')
+            ->where('expected_harvest_date', '<=', now())
+            ->update(['status' => 'harvested']);
+
         // Buyers cannot access crop management
         if ($user->role === 'buyer') {
             return redirect()->route('dashboard')->with('error', 'Access denied.');
@@ -57,6 +63,7 @@ class CropController extends Controller
             'expected_harvest_date'  => 'required|date|after:planting_date',
             'status'                 => 'required|in:growing,harvested,failed',
             'price'                  => 'nullable|numeric|min:0',
+            'yield_kg'               => 'nullable|numeric|min:0',
         ]);
 
         $validated['farm_id'] = $user->farm_id;
@@ -64,6 +71,8 @@ class CropController extends Controller
         // Farmers own their own crops; admin crops have no user_id
         if ($user->role === 'farmer') {
             $validated['user_id'] = $user->id;
+        } else {
+            $validated['user_id'] = null;
         }
 
         Crop::create($validated);
@@ -101,6 +110,7 @@ class CropController extends Controller
             'expected_harvest_date'  => 'required|date|after:planting_date',
             'status'                 => 'required|in:growing,harvested,failed',
             'price'                  => 'nullable|numeric|min:0',
+            'yield_kg'               => 'nullable|numeric|min:0',
         ]);
 
         $crop->update($validated);

@@ -12,7 +12,7 @@
         <a href="{{ route('tasks.index', ['status' => 'completed']) }}" class="px-4 py-2 {{ $status === 'completed' ? 'bg-status-info text-white shadow-sm' : 'bg-white text-gray-600 hover:text-status-info border border-gray-200' }} rounded-xl font-semibold text-sm whitespace-nowrap transition">Completed</a>
     </div>
     
-    @if(Auth::user()->role !== 'viewer')
+    @if(Auth::user()->role === 'admin' || Auth::user()->role === 'farmer')
     <a href="{{ route('tasks.create') }}" class="inline-flex justify-center items-center gap-2 bg-agro-green text-white px-5 py-2.5 rounded-xl font-semibold shadow-sm hover:shadow-md hover:bg-agro-green/90 transition whitespace-nowrap">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Add Task

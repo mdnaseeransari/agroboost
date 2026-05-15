@@ -41,6 +41,11 @@ class Crop extends Model
         return $this->hasMany(Harvest::class);
     }
 
+    public function listings()
+    {
+        return $this->hasMany(CropListing::class);
+    }
+
     public function daysRemaining()
     {
         if ($this->status !== 'growing') return 0;

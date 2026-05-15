@@ -15,16 +15,7 @@ class AnalyticsController extends Controller
     {
         $user = Auth::user();
         $farmId = $user->farm_id;
-
-        if ($user->role === 'buyer') {
-            return redirect()->route('dashboard')->with('error', 'Access denied to Analytics section.');
-        }
-
-        // For farmers, show only their crops, etc.
         $queryFarmId = $farmId;
-        if ($user->role === 'farmer') {
-            $queryFarmId = $farmId; // already their farm
-        }
 
         // Crop Distribution
         $cropDistribution = Crop::where('farm_id', $queryFarmId)
@@ -54,6 +45,43 @@ class AnalyticsController extends Controller
             ->orderBy('sort_key')
             ->get();
 
-        return view('analytics', compact('cropDistribution', 'inventoryData', 'tasksCompleted', 'tasksPending', 'harvestTimeline'));
-}
+        // --- Sales & Revenue Analytics ---
+        $totalSales = 0;
+        $totalRevenue = 0;
+        $monthlyRevenue = collect();
+
+        if ($user->isAdmin()) {
+            $totalSales = \App\Models\Order::count();
+            $totalRevenue = \App\Models\Order::where('payment_status', 'paid')->sum('total_amount');
+            $monthlyRevenue = \App\Models\Order::where('payment_status', 'paid')
+                ->where('paid_at', '>=', now()->subMonths(6))
+                ->select(
+                    DB::raw("DATE_FORMAT(paid_at, '%Y-%m') as sort_key"),
+                    DB::raw("DATE_FORMAT(paid_at, '%b %Y') as month"),
+                    DB::raw('SUM(total_amount) as total')
+                )
+                ->groupBy('sort_key', 'month')
+                ->orderBy('sort_key')
+                ->get();
+        } elseif ($user->isFarmer()) {
+            $totalSales = \App\Models\Order::where('farmer_id', $user->id)->count();
+            $totalRevenue = \App\Models\Order::where('farmer_id', $user->id)->where('payment_status', 'paid')->sum('total_amount');
+            $monthlyRevenue = \App\Models\Order::where('farmer_id', $user->id)
+                ->where('payment_status', 'paid')
+                ->where('paid_at', '>=', now()->subMonths(6))
+                ->select(
+                    DB::raw("DATE_FORMAT(paid_at, '%Y-%m') as sort_key"),
+                    DB::raw("DATE_FORMAT(paid_at, '%b %Y') as month"),
+                    DB::raw('SUM(total_amount) as total')
+                )
+                ->groupBy('sort_key', 'month')
+                ->orderBy('sort_key')
+                ->get();
+        }
+
+        return view('analytics', compact(
+            'cropDistribution', 'inventoryData', 'tasksCompleted', 'tasksPending', 'harvestTimeline',
+            'totalSales', 'totalRevenue', 'monthlyRevenue'
+        ));
+    }
 }

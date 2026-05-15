@@ -4,145 +4,77 @@ namespace App\Http\Controllers;
 
 use App\Models\Crop;
 use App\Models\InventoryItem;
-use App\Models\InventoryRequest;
+use App\Models\FarmerRequest;
 use App\Models\Task;
-use App\Models\Transaction;
+use App\Models\Order;
+use App\Models\CropListing;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
         $user   = Auth::user();
+        $role   = $user->role;
         $farmId = $user->farm_id;
-        $role   = $user->role; // 'admin', 'farmer', 'buyer'
 
-        // ── Task Counts ──────────────────────────────────────────────────────────
+        // Auto-update crops that reached their harvest date
+        if ($role !== 'buyer') {
+            Crop::where('farm_id', $farmId)
+                ->where('status', 'growing')
+                ->where('expected_harvest_date', '<=', now())
+                ->update(['status' => 'harvested']);
+        }
+
+        // ── Common Stats ──────────────────────────────────────────────────────────
         $pendingTasksQuery = Task::where('farm_id', $farmId)->where('completed', false);
-        $overdueTasksQuery = Task::where('farm_id', $farmId)->where('completed', false)->where('due_date', '<', now());
-
         if ($role === 'farmer') {
             $pendingTasksQuery->where('assigned_to', $user->id);
-            $overdueTasksQuery->where('assigned_to', $user->id);
         }
-
         $pendingTasks = $pendingTasksQuery->count();
-        $overdueTasks = $overdueTasksQuery->count();
 
-        // ── Recent Tasks ─────────────────────────────────────────────────────────
-        $recentTasksQuery = Task::where('farm_id', $farmId)
-            ->with('assignee')
-            ->where('completed', false)
-            ->orderBy('due_date');
-
-        if ($role === 'farmer') {
-            $recentTasksQuery->where('assigned_to', $user->id);
-        }
-
-        $recentTasks = $recentTasksQuery->limit(5)->get();
-
-        // ── Messaging ────────────────────────────────────────────────────────────
-        $messages = collect();
-        if ($role === 'admin') {
-            $messages = \App\Models\Message::where('farm_id', $farmId)->with('sender')->latest()->limit(10)->get();
-        } elseif ($role === 'farmer') {
-            $admin = \App\Models\User::where('farm_id', $farmId)->where('role', 'admin')->first();
-            if ($admin) {
-                $messages = \App\Models\Message::where('farm_id', $farmId)
-                    ->where(function ($q) use ($user, $admin) {
-                        $q->where(fn($q) => $q->where('sender_id', $user->id)->where('receiver_id', $admin->id))
-                          ->orWhere(fn($q) => $q->where('sender_id', $admin->id)->where('receiver_id', $user->id));
-                    })
-                    ->with('sender')->latest()->limit(10)->get();
-            }
-        }
+        $messages = \App\Models\Message::where(function($query) use ($user) {
+            $query->where('receiver_id', $user->id)
+                  ->orWhere('sender_id', $user->id);
+        })->with(['sender', 'receiver'])->latest()->limit(5)->get();
 
         // ── Role-specific data ────────────────────────────────────────────────────
-
-        // Admin data
-        $activeCrops  = 0;
-        $lowStockItems = 0;
-        $lowStockList  = collect();
-        $teamCount    = 0;
-        $teamMembers  = collect();
-        $topCrops     = collect();
-        $inventoryRequests = collect();
-
-        // Farmer data
-        $myFarmerCrops     = collect();
-        $farmerInventory   = collect();
-        $adminInventory    = collect();
-        $myRequests        = collect();
-        $cropYieldData     = [];
-
-        // Buyer data
-        $marketCrops     = collect();
-        $myTransactions  = collect();
+        $stats = [];
+        $recentOrders = collect();
+        $recentRequests = collect();
+        $marketHighlights = collect();
 
         if ($role === 'admin') {
-            $activeCrops   = Crop::where('farm_id', $farmId)->where('status', 'growing')->count();
-            $lowStockItems = InventoryItem::where('farm_id', $farmId)->whereNull('user_id')->whereRaw('quantity <= threshold_alert')->count();
-            $lowStockList  = InventoryItem::where('farm_id', $farmId)->whereNull('user_id')->whereRaw('quantity <= threshold_alert')->limit(4)->get();
-            $teamMembers   = \App\Models\User::where('farm_id', $farmId)->limit(5)->get();
-            $teamCount     = \App\Models\User::where('farm_id', $farmId)->count();
-            $topCrops      = Crop::where('farm_id', $farmId)->whereNull('user_id')->where('status', 'growing')->orderBy('expected_harvest_date')->limit(5)->get();
-            // Pending inventory requests for admin to action
-            $inventoryRequests = InventoryRequest::whereHas('item', fn($q) => $q->where('farm_id', $farmId)->whereNull('user_id'))
-                ->with(['farmer', 'item'])
-                ->where('status', 'pending')
-                ->latest()
-                ->limit(10)
-                ->get();
-        }
-
-        if ($role === 'farmer') {
-            $myFarmerCrops   = Crop::where('farm_id', $farmId)->where('user_id', $user->id)->latest()->get();
-            $farmerInventory = InventoryItem::where('farm_id', $farmId)->where('user_id', $user->id)->orderBy('name')->get();
-            $adminInventory  = InventoryItem::where('farm_id', $farmId)->whereNull('user_id')->orderBy('name')->get();
-            $myRequests      = InventoryRequest::where('farmer_id', $user->id)->with('item')->latest()->limit(5)->get();
-
-            // Build crop yield data for Chart.js (last 5 crops with yield)
-            $harvestedCrops = Crop::where('farm_id', $farmId)
-                ->where('user_id', $user->id)
-                ->where('status', 'harvested')
-                ->whereNotNull('yield_kg')
-                ->latest('actual_harvest_date')
-                ->limit(5)
-                ->get();
-
-            $cropYieldData = [
-                'labels' => $harvestedCrops->map(fn($c) => $c->name . ($c->variety ? ' ('.$c->variety.')' : ''))->values()->toArray(),
-                'data'   => $harvestedCrops->pluck('yield_kg')->values()->toArray(),
+            $stats = [
+                'total_orders' => Order::count(),
+                'revenue' => Order::where('payment_status', 'paid')->sum('total_amount'),
+                'pending_requests' => FarmerRequest::where('status', 'pending')->count(),
+                'inventory_alerts' => InventoryItem::whereRaw('quantity <= threshold_alert')->count(),
             ];
-
-            $pendingTasks = $pendingTasksQuery->getQuery()->exists() ? $pendingTasks : Task::where('farm_id', $farmId)->where('completed', false)->where('assigned_to', $user->id)->count();
+            $recentOrders = Order::with(['buyer', 'farmer'])->latest()->limit(5)->get();
+            $recentRequests = FarmerRequest::with('farmer')->where('status', 'pending')->latest()->limit(5)->get();
+        } elseif ($role === 'farmer') {
+            $stats = [
+                'my_crops' => Crop::where('user_id', $user->id)->count(),
+                'my_orders' => Order::where('farmer_id', $user->id)->count(),
+                'revenue' => Order::where('farmer_id', $user->id)->where('payment_status', 'paid')->sum('total_amount'),
+                'low_stock' => InventoryItem::where('user_id', $user->id)->whereRaw('quantity <= threshold_alert')->count(),
+            ];
+            $recentOrders = Order::where('farmer_id', $user->id)->with('buyer')->latest()->limit(5)->get();
+            $recentRequests = collect(); // Requests disabled for farmers
+        } elseif ($role === 'buyer') {
+            $stats = [
+                'my_orders' => Order::where('buyer_id', $user->id)->count(),
+                'total_spent' => Order::where('buyer_id', $user->id)->where('payment_status', 'paid')->sum('total_amount'),
+                'active_orders' => Order::where('buyer_id', $user->id)->whereNotIn('order_status', ['delivered'])->count(),
+            ];
+            $recentOrders = Order::where('buyer_id', $user->id)->with('farmer')->latest()->limit(5)->get();
+            $marketHighlights = CropListing::with(['crop', 'farmer'])->where('is_active', true)->latest()->limit(4)->get();
         }
 
-        if ($role === 'buyer') {
-            // Show harvested crops from all farmers that have price & available stock
-            $marketCrops = Crop::where('status', 'harvested')
-                ->where('price', '>', 0)
-                ->whereNotNull('user_id')
-                ->with('owner')
-                ->get()
-                ->map(function ($crop) {
-                    $sold = Transaction::where('crop_id', $crop->id)->sum('quantity');
-                    $crop->available = max(0, $crop->yield_kg - $sold);
-                    return $crop;
-                })
-                ->filter(fn($c) => $c->available > 0);
+        $selectedRecipientId = request('chat');
 
-            $myTransactions = Transaction::where('buyer_id', $user->id)->with('crop')->latest()->limit(10)->get();
-        }
-
-        return view('dashboard', compact(
-            'role', 'pendingTasks', 'overdueTasks', 'recentTasks', 'messages',
-            // Admin
-            'activeCrops', 'lowStockItems', 'lowStockList', 'teamCount', 'teamMembers', 'topCrops', 'inventoryRequests',
-            // Farmer
-            'myFarmerCrops', 'farmerInventory', 'adminInventory', 'myRequests', 'cropYieldData',
-            // Buyer
-            'marketCrops', 'myTransactions'
-        ));
+        return view('dashboard', compact('role', 'stats', 'recentOrders', 'recentRequests', 'marketHighlights', 'messages', 'pendingTasks', 'selectedRecipientId'));
     }
 }

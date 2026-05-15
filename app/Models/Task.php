@@ -12,7 +12,7 @@ class Task extends Model
 
     protected $fillable = [
         'farm_id', 'crop_id', 'title', 'description', 'due_date',
-        'completed', 'completed_at', 'assigned_to'
+        'completed', 'completed_at', 'assigned_to', 'priority', 'status'
     ];
 
     protected $casts = [
