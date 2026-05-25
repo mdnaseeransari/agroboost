@@ -11,11 +11,15 @@ class FarmerRequestController extends Controller
 {
     public function index(Request $request)
     {
-        if (!Auth::user()->isAdmin()) {
+        if (!Auth::user()->isAdmin() && !Auth::user()->isFarmer()) {
             return redirect()->route('dashboard')->with('error', 'Access denied.');
         }
-        
+
         $query = FarmerRequest::with('farmer');
+
+        if (Auth::user()->isFarmer()) {
+            $query->where('farmer_id', Auth::id());
+        }
 
         // Filter by status if provided, otherwise default to pending
         $status = $request->query('status', 'pending');
@@ -29,12 +33,36 @@ class FarmerRequestController extends Controller
 
     public function create()
     {
-        return redirect()->route('dashboard')->with('error', 'Farmers can no longer request supplies directly.');
+        if (!Auth::user()->isFarmer()) {
+            abort(403);
+        }
+
+        return view('requests.create');
     }
 
     public function store(Request $request)
     {
-        return redirect()->route('dashboard')->with('error', 'Farmers can no longer request supplies directly.');
+        if (!Auth::user()->isFarmer()) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'request_type' => 'required|in:seeds,fertilizer,tools,irrigation,equipment',
+            'item_name' => 'required|string|max:255',
+            'quantity' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        FarmerRequest::create([
+            'farmer_id' => Auth::id(),
+            'request_type' => $data['request_type'],
+            'item_name' => $data['item_name'],
+            'quantity' => $data['quantity'],
+            'description' => $data['description'] ?? null,
+            'status' => 'pending',
+        ]);
+
+        return back()->with('success', 'Your request has been sent to admin for review.');
     }
 
     public function respond(Request $request, FarmerRequest $farmerRequest)

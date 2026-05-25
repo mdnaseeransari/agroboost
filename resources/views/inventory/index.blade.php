@@ -51,8 +51,9 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @foreach($inventoryItems as $item)
             @php
-                $isLow = $item->quantity <= $item->threshold_alert;
-                $isMedium = $item->quantity <= ($item->threshold_alert * 1.5);
+                $threshold = $item->threshold_alert ?? 0;
+                $isLow = $threshold > 0 && $item->quantity <= $threshold;
+                $isMedium = $threshold > 0 && $item->quantity <= ($threshold * 1.5);
                 $statusColor = $isLow ? 'status-danger' : ($isMedium ? 'status-warning' : 'status-success');
                 $statusLabel = $isLow ? 'Low Stock' : ($isMedium ? 'Medium' : 'Healthy');
             @endphp
@@ -76,13 +77,14 @@
                             <span class="text-2xl font-bold text-gray-900">{{ number_format($item->quantity, 1) }}</span>
                             <span class="text-sm font-medium text-gray-500 ml-1">{{ $item->unit }}</span>
                         </div>
-                        <span class="text-[10px] text-gray-400 font-medium">Alert at {{ $item->threshold_alert }} {{ $item->unit }}</span>
+                        <span class="text-[10px] text-gray-400 font-medium">Alert at {{ $threshold }} {{ $item->unit }}</span>
                     </div>
                     
                     <!-- Progress bar for stock level -->
                     <div class="w-full bg-gray-100 rounded-full h-1.5 mb-6 overflow-hidden">
                         @php
-                            $percentage = min(100, ($item->quantity / ($item->threshold_alert * 2)) * 100);
+                            $maxStock = $threshold > 0 ? $threshold * 2 : 1;
+                            $percentage = $threshold > 0 ? min(100, ($item->quantity / $maxStock) * 100) : 0;
                         @endphp
                         <div class="bg-{{ $statusColor }} h-full rounded-full transition-all duration-500" style="width: {{ $percentage }}%"></div>
                     </div>
